@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 clap = {version = "4.0.17", features = ["derive"]}
 bio_utils = {git = "https://github.com/ban-m/bio_utils.git", branch = "master"}
+rand = "0.8.5"
+rand_xoshiro = "0.6.0"

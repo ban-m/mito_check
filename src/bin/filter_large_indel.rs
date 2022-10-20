@@ -18,10 +18,16 @@ use std::io::*;
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     let alignments = std::fs::File::open(&args.alignments).map(BufReader::new)?;
+    let mut has_flush_myname = false;
     for line in alignments.lines().filter_map(|l| l.ok()) {
         if line.starts_with('@') {
             println!("{line}");
         } else {
+            if !has_flush_myname {
+                has_flush_myname = true;
+                let filename = args.alignments.as_os_str().to_str().unwrap();
+                println!("@PG\tID:filter_large_indel\tPN:mito_check\tCL:filter_large_indel --alignments {} --min_sv_size {}", filename, args.min_sv_size);
+            }
             let sam = match bio_utils::sam::Sam::new(&line) {
                 Some(res) => res,
                 None => continue,
