@@ -22,6 +22,9 @@ struct Args {
     max_crop_len: usize,
     #[arg(long)]
     prefix: PathBuf,
+    /// Remove mismatches [Length]-bp near the start/end of the contig.
+    #[arg(long, default_value_t = 1000)]
+    safe_margin: usize,
 }
 
 use std::collections::HashMap;
@@ -77,7 +80,7 @@ fn main() -> std::io::Result<()> {
 use bio_utils::paf::PAF;
 type Region = (String, (usize, usize));
 fn find_crop_regions(alignments: &HashMap<String, Vec<PAF>>, arg: &Args) -> Vec<Region> {
-    let position_of_variants = enumerate_mismatches(alignments);
+    let position_of_variants = enumerate_mismatches(alignments, arg);
     position_of_variants
         .iter()
         .flat_map(|(id, poss)| {
@@ -110,7 +113,10 @@ fn aggregate(poss: &[usize], args: &Args) -> Vec<(usize, usize)> {
     ranges
 }
 
-fn enumerate_mismatches(alignments: &HashMap<String, Vec<PAF>>) -> HashMap<String, Vec<usize>> {
+fn enumerate_mismatches(
+    alignments: &HashMap<String, Vec<PAF>>,
+    arg: &Args,
+) -> HashMap<String, Vec<usize>> {
     let mut found_mismatches: HashMap<_, Vec<_>> = HashMap::new();
     for aln in alignments.values().flat_map(|alns| alns.iter()) {
         let mut rpos = aln.tstart;
@@ -132,9 +138,16 @@ fn enumerate_mismatches(alignments: &HashMap<String, Vec<PAF>>) -> HashMap<Strin
             }
         }
     }
-    for slot in found_mismatches.values_mut() {
+    let contig_lengths: HashMap<_, _> = alignments
+        .values()
+        .flat_map(|alns| alns.iter())
+        .map(|aln| (aln.tname.to_string(), aln.tlen))
+        .collect();
+    for (contig_name, slot) in found_mismatches.iter_mut() {
         slot.sort_unstable();
         slot.dedup();
+        let length = contig_lengths[contig_name];
+        slot.retain(|&pos| arg.safe_margin < pos && pos < length.saturating_sub(arg.safe_margin));
     }
     found_mismatches
 }
