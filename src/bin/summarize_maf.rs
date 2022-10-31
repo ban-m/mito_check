@@ -20,7 +20,7 @@ fn main() -> std::io::Result<()> {
         }
         aln += ((refr.length() as f64).sqrt() * (query.length() as f64).sqrt()).ceil() as usize;
     }
-    println!("INS\tDEL\tSUBS\tTOTAL\tALN");
+    //   println!("INS\tDEL\tSUBS\tTOTAL\tALN");
     println!("{ins}\t{del}\t{subs}\t{}\t{aln}", ins + del + subs);
     Ok(())
 }
