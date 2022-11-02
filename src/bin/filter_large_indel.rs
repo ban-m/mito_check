@@ -2,11 +2,11 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-/// Simple program to greet a person
+/// Filter large indel from SAM file.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Alignments in the SAM file format.
+    /// Alignments in the SAM file format. If -, use stdin.
     #[arg(short, long)]
     alignments: PathBuf,
     /// Minimum length of the insertion/deletion to be retained.
@@ -14,12 +14,9 @@ struct Args {
     min_sv_size: usize,
 }
 
-use std::io::*;
-fn main() -> std::io::Result<()> {
-    let args = Args::parse();
-    let alignments = std::fs::File::open(&args.alignments).map(BufReader::new)?;
+fn flush_large_indel<I: std::iter::Iterator<Item = String>>(alignments: I, args: &Args) {
     let mut has_flush_myname = false;
-    for line in alignments.lines().filter_map(|l| l.ok()) {
+    for line in alignments {
         if line.starts_with('@') {
             println!("{line}");
         } else {
@@ -47,5 +44,19 @@ fn main() -> std::io::Result<()> {
             }
         }
     }
+}
+
+use std::io::*;
+fn main() -> std::io::Result<()> {
+    let args = Args::parse();
+    if args.alignments.as_os_str() == "-" {
+        let stdio = std::io::stdin();
+        let reader = BufReader::new(stdio.lock()).lines().filter_map(|x| x.ok());
+        flush_large_indel(reader, &args)
+    } else {
+        let reader = std::fs::File::open(&args.alignments).map(BufReader::new)?;
+        let reader = reader.lines().filter_map(|l| l.ok());
+        flush_large_indel(reader, &args);
+    };
     Ok(())
 }

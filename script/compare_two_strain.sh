@@ -1,5 +1,5 @@
 #!/bin/bash
-## Synopsis: bash compare_two_strain.sh $ASM1<FASTA> $ASM2<FASTA>
+## Synopsis: bash compare_two_strain.sh $ASM1<FASTA> $ASM2<FASTA> <OUTPUT_PREFIX>
 ## Requirements: minimap2, last.
 ## It compare two strains, output summary of the mutation rate (in,del,mism) with the length of the alignments (\sqrt(len * len)).
 set -uex
